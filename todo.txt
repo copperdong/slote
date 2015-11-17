@@ -1,0 +1,29 @@
+Stars indicate priority
+
+1. Create persistent classifier to minimize run time *
+
+2. Gather more training data OR figure out why char_rec.recognize() always returns x ***
+
+3. Change input image to a startup argument *
+
+4. Figure out how to ask user if characters identified are correct *
+
+5. Create function to check with user correctness of identifications (see 4) *
+
+6. Add 'solve in mathematica option' *
+
+7. Create class to indicate heading structure and make mathematical sense of identified images  ***
+
+8. Add mathematical classification functionality to char_rec or new file (see 7) ***
+
+9. Create function to format latex code **
+
+10. Create function to compile latex code **
+
+11. Reconsider package structure **
+
+12. Design a more robust way to deal with images of varying dimensions **
+
+13. Find a way to deal with thickness and noise in char_split.seperate() **
+
+14. Write a better loop over training data ***

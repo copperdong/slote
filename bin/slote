@@ -1,0 +1,5 @@
+#! /usr/bin/python
+
+from slote import main
+
+main()
