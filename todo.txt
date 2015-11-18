@@ -27,3 +27,7 @@ Stars indicate priority
 13. Find a way to deal with thickness and noise in char_split.seperate() **
 
 14. Write a better loop over training data ***
+
+15. Write script to batch ingest new training images ***
+
+16. Add option for writing medium and optimize contour tracing parameters *

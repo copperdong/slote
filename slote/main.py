@@ -20,5 +20,8 @@ def main():
     #seperate characters into individual images
     characters = slote.seperate(raw_image)
 
+    #find centers of characters
+    centers = slote.locate(characters)
+
     #identify each character
     identities = slote.recognize(characters, classifier)

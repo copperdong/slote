@@ -1,5 +1,6 @@
 Python:
 
+scipy
 pyopencv
 numpy
 matplotlib
