@@ -57,7 +57,7 @@ def remove_noise(characters):
 
 def merge_vertical(characters, centers):
     #identify discontinuous characters like = or i
-
+    #change this to add vertical characters as tuple
     char_merged = []
     char_merged_copy = list(characters)
     counted = []
