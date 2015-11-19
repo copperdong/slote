@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from scipy.ndimage.measurements import center_of_mass
 
+#add class to describe each character
+
 import matplotlib.pyplot as plt
 
 def seperate(raw_image):
