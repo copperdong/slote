@@ -31,3 +31,5 @@ Stars indicate priority
 15. Write script to batch ingest new training images ***
 
 16. Add option for writing medium and optimize contour tracing parameters *
+
+17. Make a remove duplicates function

@@ -2,20 +2,20 @@
 
 import cv2
 import slote
+import numpy as np
 
 def main():
     #filename = raw_input('Choose a photo to LaTeX (full path): ')
-    filename = 'training_data/test/image1.jpeg'
+    filename = '../slote/test_data/image1.jpeg'
 
     classifier = slote.train()
 
     #ask user for input image
-    while True:
-        try:
-            raw_image = cv2.imread(filename, 0)
-            break
-        except IOError:
-            filename = raw_input('Cannot open file; try again. ')
+    raw_image = cv2.imread(filename, 0)
+
+    while type(raw_image) is not np.ndarray:
+        filename = raw_input('Image cannot be opened; try again: ')
+        raw_image = cv2.imread(filename, 0)
 
     #seperate characters into individual images
     characters = slote.seperate(raw_image)
