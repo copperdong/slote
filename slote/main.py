@@ -6,7 +6,7 @@ import numpy as np
 
 def main():
     #filename = raw_input('Choose a photo to LaTeX (full path): ')
-    filename = '../slote/test_data/image1.jpeg'
+    filename = '../slote/training_data/image1.jpeg'
 
     classifier = slote.train()
 
@@ -18,10 +18,8 @@ def main():
         raw_image = cv2.imread(filename, 0)
 
     #seperate characters into individual images
-    characters = slote.seperate(raw_image)
-
-    #find centers of characters
-    centers = slote.locate(characters)
+    #returns a list of raw_character objects
+    raw_characters = slote.seperate(raw_image)
 
     #identify each character
-    identities = slote.recognize(characters, classifier)
+    characters = slote.recognize(raw_characters, classifier)

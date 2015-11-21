@@ -2,108 +2,154 @@ import cv2
 import numpy as np
 from scipy.ndimage.measurements import center_of_mass
 
-#add class to describe each character
-
 import matplotlib.pyplot as plt
 
+class raw_character:
+    def __init__(self, img):
+        self.is_superscript = False
+        self.is_subscript = False
+        self.image = img
+        self.center = tuple([0,0])
+        self.shape = np.shape(img)
+        self.position = 0
+        self.sub_characters = [img]
+        self.image_centered = None
+        self.contour = None
+        self.id = 0
+
 def seperate(raw_image):
-    #experiment with last two numbers to find least noisy result
+    #apply a series of functions to populate class attributes
+
+    characters = get_contours(raw_image)
+
+    characters = remove_noise(characters)
+
+    characters = locate(characters)
+
+    characters = merge_vertical(characters)
+
+    characters = order(characters)
+
+    characters = center_image(characters)
+
+    characters = fix_images(characters)
+
+    return characters
+
+def fix_images(characters):
+
+    for char in characters:
+        char.image = invert_image(char.image)
+        char.image_centered = cv2.resize(invert_image(char.image_centered), char.shape)
+
+    return characters
+
+def get_contours(raw_image):
+    #experiment with last two parameters to find least noisy result
     image_binary = cv2.adaptiveThreshold(raw_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 27, 10)
-
-    #plt.imshow(image_binary, cmap = 'gray', interpolation = 'none')
-    #plt.show()
-
 
     contours, hierarchy = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     characters = []
+    counter = 0
 
     for i in range(len(contours)):
         image = np.ones(raw_image.shape)
         cv2.drawContours(image, contours, i, (0, 255, 0), thickness = 1)
-        characters.append(image)
+        characters.append(raw_character(image))
+        characters[i].contour = contours[i]
 
-
-    characters = remove_noise(characters)
-
-    centers = locate(characters)
-
-    characters = merge_vertical(characters, centers)
-
-    characters = order(characters, centers)
+        characters[i].id = counter
+        counter += 1
 
     return characters
 
 def locate(characters): 
     #find the "center of mass" of the array
 
-    centers = []
-
-    for img in characters:
-        image = invert_image(img)
+    for char in characters:
+        image = invert_image(char.image)
 
         #center_of_mass returns a tuple
-        centers.append(tuple([img, center_of_mass(image)]))
+        char.center = center_of_mass(image)
 
-    return centers
+    return characters
 
 
 def remove_noise(characters):
     #attempt to remove noise from characters by checking perimeter length
     char_actual = []
     for char in characters:
-        image = invert_image(char)
+        image = invert_image(char.image)
+
         if np.sum(image) > 20.0:
             char_actual.append(char)
 
     return char_actual[1:]
 
-def merge_vertical(characters, centers):
+def merge_vertical(characters):
     #identify discontinuous characters like = or i
-    #change this to add vertical characters as tuple
-    char_merged = []
-    char_merged_copy = list(characters)
-    counted = []
+    
     char_index = 0
     char_test_index = 0
-    counter = 0
+    tolerance = 0.01
 
     for char in characters:
         char_test_index = 0
-
+        merged = np.zeros(char.image.shape)
         for char_test in characters:
-            delta = abs(centers[char_index][1][1] - centers[char_test_index][1][1])
+            delta = abs(char.center[1] - char_test.center[1])
 
-            if delta < 0.01 * characters[char_index].shape[1] and delta > 0.0:
-                merged = centers[char_index][0] + centers[char_test_index][0]
-                char_merged.append(merged)
-                
+            if delta < tolerance * char.shape[1] and delta > 0.0:
+                char.image = normalize(char.image + char_test.image)
+                char.sub_characters = [char, char_test]
+                del characters[char_test_index]
+
+
             char_test_index += 1
         char_index += 1
+    return characters
 
-    print len(char_merged)
-
-    char_merged = remove_duplicates(char_merged)
-
-    print len(char_merged)
-
-    return char_merged
-
-def invert_image(char):
+def invert_image(img):
     #exchange ones and zeros to compensate for opencv convention
 
-    image = np.zeros(char.shape)
-    for row in range(char.shape[0]):
-        for col in range(char.shape[1]):
-            if char[row, col] == 1.0:
-                image[row, col] = 0.0
+    image_invert = np.zeros(img.shape)
+    for row in range(image_invert.shape[0]):
+        for col in range(image_invert.shape[1]):
+            if img[row, col] == 1.0:
+                image_invert[row, col] = 0.0
             else:
-                image[row, col] = 1.0
-    return image
+                image_invert[row, col] = 1.0
+    return image_invert
 
-def remove_duplicates(characters):
+def normalize(img):
+    #normalize to ones and zeros
+
+    image_norm = np.zeros(img.shape)
+    for row in range(image_norm.shape[0]):
+        for col in range(image_norm.shape[1]):
+            if img[row, col] >= 2.0:
+                image_norm[row, col] = 1.0
+            else:
+                image_norm[row, col] = 0.0
+    return image_norm
+
+
+def order(characters):
+    #order characters by x coordinate
+    characters.sort(key=lambda x: x.center[1])
+
+    for char in characters:
+        char.position = characters.index(char)
 
     return characters
 
-def order(characters, centers):
+def center_image(characters):
+
+    for char in characters:
+        col, row, col_len, row_len = cv2.boundingRect(char.contour)
+
+        centered_img = char.image[row:row + row_len, col:col + col_len]
+        char.image_centered = centered_img
 
     return characters
+
