@@ -4,10 +4,11 @@ from scipy.ndimage.measurements import center_of_mass
 
 import matplotlib.pyplot as plt
 
-class raw_character:
+class RawCharacter:
     def __init__(self, img):
-        self.is_superscript = False
-        self.is_subscript = False
+        self.super_script = [] #list of characters that are a superscript
+        self.sub_script = [] #list of characters that are a subscript
+        self.main_char_id = ['']
         self.image = img
         self.center = tuple([0,0])
         self.shape = np.shape(img)
@@ -16,7 +17,7 @@ class raw_character:
         self.image_centered = None
         self.contour = None
         self.id = 0
-
+    #reform class to populate attributes when initialized
 def seperate(raw_image):
     #apply a series of functions to populate class attributes
 
@@ -55,7 +56,7 @@ def get_contours(raw_image):
     for i in range(len(contours)):
         image = np.ones(raw_image.shape)
         cv2.drawContours(image, contours, i, (0, 255, 0), thickness = 1)
-        characters.append(raw_character(image))
+        characters.append(RawCharacter(image))
         characters[i].contour = contours[i]
 
         characters[i].id = counter
@@ -92,7 +93,8 @@ def merge_vertical(characters):
     char_index = 0
     char_test_index = 0
     tolerance = 0.01
-
+    
+    #add filter for characters on the same level
     for char in characters:
         char_test_index = 0
         merged = np.zeros(char.image.shape)
