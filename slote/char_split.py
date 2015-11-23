@@ -4,11 +4,13 @@ from scipy.ndimage.measurements import center_of_mass
 
 import matplotlib.pyplot as plt
 
+#try to change any tolerances to be dependent on the number of characters
+#to avoid scaling issues
+
 class RawCharacter:
     def __init__(self, img):
         self.super_script = [] #list of characters that are a superscript
         self.sub_script = [] #list of characters that are a subscript
-        self.main_char_id = ['']
         self.image = img
         self.center = tuple([0,0])
         self.shape = np.shape(img)
@@ -21,7 +23,7 @@ class RawCharacter:
 def seperate(raw_image):
     #apply a series of functions to populate class attributes
 
-    characters = get_contours(raw_image)
+    characters, image_binary = get_contours(raw_image)
 
     characters = remove_noise(characters)
 
@@ -35,7 +37,12 @@ def seperate(raw_image):
 
     characters = fix_images(characters)
 
-    return characters
+    #for char in characters:
+        #plt.imshow(char.image, cmap = 'gray', interpolation = 'none')
+        #plt.show()
+    #characters = fix_relations(characters)
+
+    return characters, image_binary
 
 def fix_images(characters):
 
@@ -62,57 +69,60 @@ def get_contours(raw_image):
         characters[i].id = counter
         counter += 1
 
-    return characters
+    return characters, image_binary
 
 def locate(characters): 
     #find the "center of mass" of the array
 
     for char in characters:
         image = invert_image(char.image)
-
-        #center_of_mass returns a tuple
         char.center = center_of_mass(image)
 
     return characters
 
 
 def remove_noise(characters):
-    #attempt to remove noise from characters by checking perimeter length
+    """attempt to remove noise from characters by checking perimeter length"""
     char_actual = []
     for char in characters:
         image = invert_image(char.image)
 
-        if np.sum(image) > 20.0:
+        if np.sum(image) > 15.0:
             char_actual.append(char)
 
     return char_actual[1:]
 
 def merge_vertical(characters):
-    #identify discontinuous characters like = or i
+    """identify discontinuous characters like = or i"""
     
     char_index = 0
     char_test_index = 0
-    tolerance = 0.01
-    
+    tolerance_x = 0.02
+    tolerance_y = 0.1
+
     #add filter for characters on the same level
     for char in characters:
         char_test_index = 0
         merged = np.zeros(char.image.shape)
+
         for char_test in characters:
-            delta = abs(char.center[1] - char_test.center[1])
+            delta_x = abs(char.center[1] - char_test.center[1])
+            delta_y = abs(char.center[0] - char_test.center[0])
 
-            if delta < tolerance * char.shape[1] and delta > 0.0:
-                char.image = normalize(char.image + char_test.image)
-                char.sub_characters = [char, char_test]
-                del characters[char_test_index]
-
+            #check if characters are on the same line and not the same character
+            if delta_y < tolerance_y * char.shape[0] and char_index != char_test_index:
+                #check if characters are near each other 
+                if delta_x < tolerance_x * char.shape[1]:
+                    char.image = normalize(char.image + char_test.image)
+                    char.sub_characters = [char, char_test]
+                    del characters[char_test_index]
 
             char_test_index += 1
         char_index += 1
     return characters
 
 def invert_image(img):
-    #exchange ones and zeros to compensate for opencv convention
+    """exchange ones and zeros to compensate for opencv convention"""
 
     image_invert = np.zeros(img.shape)
     for row in range(image_invert.shape[0]):
@@ -124,7 +134,7 @@ def invert_image(img):
     return image_invert
 
 def normalize(img):
-    #normalize to ones and zeros
+    """normalize to ones and zeros"""
 
     image_norm = np.zeros(img.shape)
     for row in range(image_norm.shape[0]):
@@ -134,16 +144,6 @@ def normalize(img):
             else:
                 image_norm[row, col] = 0.0
     return image_norm
-
-
-def order(characters):
-    #order characters by x coordinate
-    characters.sort(key=lambda x: x.center[1])
-
-    for char in characters:
-        char.position = characters.index(char)
-
-    return characters
 
 def center_image(characters):
 
@@ -155,3 +155,70 @@ def center_image(characters):
 
     return characters
 
+def order(characters):
+    """order characters on x, then y and establish superscripts and subscripts"""
+
+#    characters.sort(key = lambda x: (x.center[0], x.center[1]))
+
+
+    char_index = 0
+    char_test_index = 0
+    tolerance_x = 0.1
+    tolerance_y = 0.01
+    thresh = 0.1
+    above = []
+    below = []
+
+    for char in characters:
+        char_test_index = 0
+
+        for char_test in characters:
+            delta_x = char_test.center[1] - char.center[1]
+            delta_y = char_test.center[0] - char.center[0]
+
+            #check if characters are stacked and not the same character
+            if abs(delta_x) < tolerance_x * char.shape[1] and char_index != char_test_index:
+
+                 if delta_y < 0 and abs(delta_y) > tolerance_y * char.shape[0]:
+                    if abs(delta_y) > thresh * char.shape[0]:
+                         below.append(char_test)
+
+                 elif delta_y > 0 and abs(delta_y) > tolerance_y * char.shape[0]:
+                     if abs(delta_y) > thresh * char.shape[0]:
+                         above.append(char_test)
+
+            char_test_index += 1
+
+        char.sub_script = below
+        char.super_script = above
+
+        char.super_script.extend(below)
+        char.sub_script.extend(above)
+
+            #char.super_script = char.super_script.sort(key = lambda x: x.super_script[x].center[1])
+            #char.sub_script = char.sub_script.sort(key = lambda x: x.center[1])
+        
+        above = []
+        below = []
+
+        char_index += 1
+
+    for char in characters:
+        if len(char.super_script) > 1:
+            print len(char.super_script)
+            mat = np.add(char.super_script[0].image, char.super_script[1].image)
+            plt.imshow(mat, cmap = 'gray', interpolation = 'none')
+            plt.show()
+
+
+
+#                    ch = [char, char_test]
+#                    ch = ch.sort(key = lambda x: x.center[1])
+
+#                    char.sub_characters = [char, char_test]
+#                    del characters[char_test_index]
+
+
+#        char_index += 1
+    return characters
+	

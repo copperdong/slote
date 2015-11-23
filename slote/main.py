@@ -6,7 +6,7 @@ import numpy as np
 
 def main():
     #filename = raw_input('Choose a photo to LaTeX (full path): ')
-    filename = '../slote/training_data/image1.jpeg'
+    filename = '../slote/training_data/summation_compressed.jpg'
 
     classifier = slote.train()
 
@@ -19,7 +19,7 @@ def main():
 
     #seperate characters into individual images
     #returns a list of raw_character objects
-    raw_characters = slote.seperate(raw_image)
+    raw_characters, image_binary = slote.seperate(raw_image)
 
     #identify each character
     characters = slote.recognize(raw_characters, classifier)
